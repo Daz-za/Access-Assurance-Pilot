@@ -3,17 +3,19 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "tsx watch src/main.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "migrate": "echo \"TODO migrate\"",
-    "seed": "tsx src/db/seed.ts"
+    "seed": "tsx src/db/seed.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "dotenv": "^16.4.0",
     "fastify": "^4.26.0",
-    "zod": "^3.23.0",
-    "dotenv": "^16.4.0"
+    "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"
   }
