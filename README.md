@@ -25,7 +25,7 @@ make pilot-up
 Web: `http://localhost:3000`\
 API: `http://localhost:4000/health/live`\
 MinIO Console: `http://localhost:9001`\
-OPA: `http://localhost:8181`\
+OPA: `http://localhost:8181`
 
 ## Demo flow
 
@@ -43,4 +43,4 @@ OPA: `http://localhost:8181`\
 `infra/docker` – local runtime\
 `infra/opa` – Rego policies\
 `infra/seed` – demo data\
-`docs/pilot-runbook` – live demo guide\
+`docs/pilot-runbook` – live demo guide
