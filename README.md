@@ -21,8 +21,8 @@ Access Assurance Hub is a pilot platform for running cross-system access reviews
 ```bash
 make pilot-up
 ```
-3. Open:
-Web: [http://localhost:3000]\
+3. Open:\
+Web: `http://localhost:3000]`\
 API: `http://localhost:4000/health/live`\
 MinIO Console: `http://localhost:9001`\
 OPA: `http://localhost:8181`
