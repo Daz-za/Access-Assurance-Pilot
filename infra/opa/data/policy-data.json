@@ -1,0 +1,13 @@
+{
+  "tenants": {
+    "default": {
+      "sodPairs": [
+        ["FI Admin", "AP Payments"]
+      ],
+      "privilegedRoles": [
+        "Global Admin",
+        "Vault Admin"
+      ]
+    }
+  }
+}
