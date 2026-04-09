@@ -7,8 +7,17 @@
       "helm": "latest"
     }
   },
-  "postCreateCommand": "corepack enable && pnpm install && [ -f .env ] || cp .env.example .env",
+  "postCreateCommand": "corepack enable && pnpm install && ([ -f .env ] || cp .env.example .env)",
   "forwardPorts": [3000, 4000, 5432, 6379, 9000, 9001, 8181],
+  "portsAttributes": {
+    "3000": { "label": "Web" },
+    "4000": { "label": "API" },
+    "5432": { "label": "Postgres" },
+    "6379": { "label": "Redis" },
+    "9000": { "label": "MinIO API" },
+    "9001": { "label": "MinIO Console" },
+    "8181": { "label": "OPA" }
+  },
   "customizations": {
     "vscode": {
       "extensions": [
