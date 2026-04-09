@@ -8,8 +8,7 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "pilot:start": "make pilot-up",
-    "pilot:stop": "make pilot-down"
+    "demo:start": "make demo-up"
   },
   "devDependencies": {
     "turbo": "^2.0.0",

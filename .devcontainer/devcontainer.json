@@ -1,30 +1,23 @@
 {
-  "name": "Access Assurance Pilot",
+  "name": "Access Assurance Pilot (Demo)",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
       "kubectl": "latest",
       "helm": "latest"
     }
   },
   "postCreateCommand": "corepack enable && pnpm install && ([ -f .env ] || cp .env.example .env)",
-  "forwardPorts": [3000, 4000, 5432, 6379, 9000, 9001, 8181],
+  "forwardPorts": [3000, 4000],
   "portsAttributes": {
     "3000": { "label": "Web" },
-    "4000": { "label": "API" },
-    "5432": { "label": "Postgres" },
-    "6379": { "label": "Redis" },
-    "9000": { "label": "MinIO API" },
-    "9001": { "label": "MinIO Console" },
-    "8181": { "label": "OPA" }
+    "4000": { "label": "API" }
   },
   "customizations": {
     "vscode": {
       "extensions": [
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
-        "ms-azuretools.vscode-docker",
         "ms-kubernetes-tools.vscode-kubernetes-tools",
         "redhat.vscode-yaml"
       ]
