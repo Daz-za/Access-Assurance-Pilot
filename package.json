@@ -1,7 +1,7 @@
 {
   "name": "access-assurance-pilot",
   "private": true,
-  "packageManager": "pnpm@10",
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",

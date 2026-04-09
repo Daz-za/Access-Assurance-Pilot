@@ -158,8 +158,15 @@ async function buildServer() {
   return app;
 }
 
-const app = await buildServer();
-const port = Number(process.env.API_PORT || 4000);
+async function start() {
+  const app = await buildServer();
+  const port = Number(process.env.API_PORT || 4000);
 
-await app.listen({ port, host: "0.0.0.0" });
-app.log.info(`API running on ${port}`);
+  await app.listen({ port, host: "0.0.0.0" });
+  app.log.info(`API running on ${port}`);
+}
+
+start().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

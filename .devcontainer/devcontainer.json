@@ -7,7 +7,7 @@
       "helm": "latest"
     }
   },
-  "postCreateCommand": "corepack enable && pnpm install && ([ -f .env ] || cp .env.example .env)",
+  "postCreateCommand": "corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm install && ([ -f .env ] || cp .env.example .env)",
   "forwardPorts": [3000, 4000],
   "portsAttributes": {
     "3000": { "label": "Web" },
