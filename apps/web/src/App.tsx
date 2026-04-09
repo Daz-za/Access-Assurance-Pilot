@@ -36,6 +36,12 @@ type ReviewDetail = {
   }>;
 };
 
+type AuditResponse = {
+  campaign: { id: string; name: string };
+  user: { id: string; displayName: string };
+  events: Array<{ id: string; timestamp: string; description: string }>;
+};
+
 const shellStyle: React.CSSProperties = {
   minHeight: "100vh",
   background: "linear-gradient(180deg, #0f172a 0%, #020617 100%)",
@@ -55,12 +61,14 @@ function App() {
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [selected, setSelected] = useState<ReviewDetail | null>(null);
-  const [audit, setAudit] = useState<any | null>(null);
+  const [audit, setAudit] = useState<AuditResponse | null>(null);
   const [comment, setComment] = useState("");
 
   useEffect(() => {
-    apiGet<DashboardResponse>("/dashboard").then(setDashboard);
-    apiGet<{ items: InboxItem[] }>("/inbox").then((r) => setInbox(r.items));
+    apiGet<DashboardResponse>("/dashboard").then(setDashboard).catch(console.error);
+    apiGet<{ items: InboxItem[] }>("/inbox")
+      .then((r) => setInbox(r.items))
+      .catch(console.error);
   }, []);
 
   async function openReview(item: InboxItem) {
@@ -88,7 +96,7 @@ function App() {
     setComment("");
     setView("audit");
 
-    const auditData = await apiGet(
+    const auditData = await apiGet<AuditResponse>(
       `/audit/campaigns/${selected.campaignId}/users/${selected.userId}`
     );
     setAudit(auditData);
@@ -183,7 +191,7 @@ function App() {
                 <strong>{audit.user.displayName}</strong> · {audit.campaign.name}
               </p>
               <ul>
-                {audit.events.map((event: any) => (
+                {audit.events.map((event) => (
                   <li key={event.id}>
                     {event.timestamp} — {event.description}
                   </li>

@@ -6,33 +6,29 @@ import { evaluateSodPolicy } from "./lib/opa";
 
 dotenv.config();
 
-async function buildServer() {
+async function start() {
   const app = Fastify({ logger: true });
 
-  await app.register(cors, {
-    origin: true
-  });
+  await app.register(cors, { origin: true });
 
   app.get("/health/live", async () => ({ status: "ok" }));
 
   app.get("/health/ready", async () => ({
     status: "ready",
-    services: {
-      api: "ok"
-    }
+    services: { api: "ok" },
   }));
 
   app.get("/me", async () => ({
     id: "demo-admin",
     displayName: "Darren Lentz",
     email: "darren@example.com",
-    roles: ["admin"]
+    roles: ["admin"],
   }));
 
   app.get("/dashboard", async () => dashboard);
 
   app.get("/inbox", async () => ({
-    items: inboxItems.filter((item) => item.status === "pending")
+    items: inboxItems.filter((item) => item.status === "pending"),
   }));
 
   app.get("/reviews/:campaignId/users/:userId", async (request, reply) => {
@@ -77,7 +73,7 @@ async function buildServer() {
         campaign: { id: campaignId, name: detail.campaignName },
         user: { id: userId, displayName: detail.userName },
         events: [],
-        evidence: []
+        evidence: [],
       };
     }
 
@@ -86,19 +82,19 @@ async function buildServer() {
       timestamp: new Date().toISOString(),
       description: `Decision submitted: ${body.decision}${
         policyResult?.result?.deny?.length ? " (policy flags present)" : ""
-      }`
+      }`,
     });
 
     auditByReview[key].evidence.push({
       id: `evi-${Date.now()}`,
-      label: "Reviewer decision record"
+      label: "Reviewer decision record",
     });
 
     return {
       ok: true,
       decision: body.decision,
       comment: body.comment || null,
-      policyResult
+      policyResult,
     };
   });
 
@@ -124,16 +120,16 @@ async function buildServer() {
         issueType: item.issue,
         issueLabel: item.issue,
         systems: [item.systemName],
-        severity: item.severity
-      }))
+        severity: item.severity,
+      })),
   }));
 
   app.get("/admin/systems", async () => ({
     items: [
       { id: "sys-1", name: "SAP", type: "erp", connectionStatus: "connected" },
       { id: "sys-2", name: "AD", type: "directory", connectionStatus: "connected" },
-      { id: "sys-3", name: "CSV Upload", type: "custom", connectionStatus: "connected" }
-    ]
+      { id: "sys-3", name: "CSV Upload", type: "custom", connectionStatus: "connected" },
+    ],
   }));
 
   app.get("/admin/rules", async () => ({
@@ -143,25 +139,19 @@ async function buildServer() {
         name: "FI Admin + AP Payments",
         type: "sod",
         enabled: true,
-        severity: "critical"
+        severity: "critical",
       },
       {
         id: "rule-2",
         name: "Global Admin Privileged Flag",
         type: "privileged",
         enabled: true,
-        severity: "critical"
-      }
-    ]
+        severity: "critical",
+      },
+    ],
   }));
 
-  return app;
-}
-
-async function start() {
-  const app = await buildServer();
   const port = Number(process.env.API_PORT || 4000);
-
   await app.listen({ port, host: "0.0.0.0" });
   app.log.info(`API running on ${port}`);
 }
