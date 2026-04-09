@@ -1,5 +1,5 @@
 {
-  "name": "Access Assurance Pilot (Demo)",
+  "name": "Access Assurance Pilot",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "features": {
     "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
@@ -8,10 +8,15 @@
     }
   },
   "postCreateCommand": "corepack enable && corepack prepare pnpm@10.33.0 --activate && pnpm install && ([ -f .env ] || cp .env.example .env)",
-  "forwardPorts": [3000, 4000],
+  "forwardPorts": [3000, 4000, 5432, 6379, 9000, 8181, 8080],
   "portsAttributes": {
     "3000": { "label": "Web" },
-    "4000": { "label": "API" }
+    "4000": { "label": "API" },
+    "5432": { "label": "Postgres" },
+    "6379": { "label": "Redis" },
+    "9000": { "label": "MinIO" },
+    "8181": { "label": "OPA" },
+    "8080": { "label": "Rekor" }
   },
   "customizations": {
     "vscode": {

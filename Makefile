@@ -1,20 +1,37 @@
-.PHONY: check-pnpm demo-up demo-api demo-web demo-worker test k8s-render
+.PHONY: check-pnpm infra-up infra-down migrate seed api web worker pilot-up pilot-down rekor-verify test k8s-render
 
 check-pnpm:
 	@command -v pnpm >/dev/null 2>&1 || (echo "pnpm is not available. Run: corepack enable && corepack prepare pnpm@10.11.0 --activate" && exit 1)
 	@test -d node_modules || (echo "Dependencies are not installed. Run: pnpm install" && exit 1)
 
-demo-up: check-pnpm
-	pnpm dev
+infra-up:
+	docker-compose -f infra/docker/docker-compose.yml up -d
 
-demo-api: check-pnpm
+infra-down:
+	docker-compose -f infra/docker/docker-compose.yml down
+
+migrate:
+	pnpm --filter api db:migrate
+
+seed:
+	pnpm --filter api db:seed
+
+api: check-pnpm
 	pnpm --filter api dev
 
-demo-web: check-pnpm
+web: check-pnpm
 	pnpm --filter web dev
 
-demo-worker: check-pnpm
+worker: check-pnpm
 	pnpm --filter worker dev
+
+pilot-up: infra-up
+	pnpm dev
+
+pilot-down: infra-down
+
+rekor-verify:
+	# Add rekor verification command here
 
 test: check-pnpm
 	pnpm test

@@ -1,6 +1,6 @@
 # Access Assurance Pilot
 
-Access Assurance Hub is a pilot platform for running cross-system access reviews with policy-based risk detection, evidence generation, and audit traceability.
+Access Assurance Hub is a pilot platform for running cross-system access reviews with policy-based risk detection, evidence generation, and audit traceability using Rekor for immutable anchoring.
 
 ## Stack
 
@@ -10,6 +10,7 @@ Access Assurance Hub is a pilot platform for running cross-system access reviews
 - Redis
 - MinIO
 - OPA
+- Rekor
 - Docker Compose
 - GitHub Codespaces ready
 
@@ -25,22 +26,28 @@ make pilot-up
 Web: `http://localhost:3000`\
 API: `http://localhost:4000/health/live`\
 MinIO Console: `http://localhost:9001`\
-OPA: `http://localhost:8181`
+OPA: `http://localhost:8181`\
+Rekor: `http://localhost:8080`
 
-## Demo flow
+## Pilot flow
 
-- View dashboard
-- Open inbox
-- Review access item
-- See SoD or privileged flag
-- Submit decision
-- Inspect audit trail
+- Start infrastructure with `make infra-up`
+- Run migrations and seed data with `make migrate` and `make seed`
+- Launch services with `make api`, `make web`, `make worker`
+- View dashboard for access reviews
+- Open inbox for pending reviews
+- Review access items with policy checks
+- Submit decisions and generate evidence
+- Inspect audit trail with Rekor anchors
 
 ## Repo structure
 `apps/web` – React UI shell\
-`apps/api` – backend API and orchestration\
-`apps/worker` – async jobs\
-`infra/docker` – local runtime\
+`apps/api` – backend API, modules, and database\
+`apps/worker` – async jobs and Rekor integration\
+`infra/docker` – local runtime with Rekor\
 `infra/opa` – Rego policies\
-`infra/seed` – demo data\
-`docs/pilot-runbook` – live demo guide
+`infra/rekor` – Rekor configuration\
+`infra/seed` – seed data\
+`packages/shared-types` – shared TypeScript types\
+`packages/config` – configuration utilities\
+`docs/pilot-runbook` – pilot guide
