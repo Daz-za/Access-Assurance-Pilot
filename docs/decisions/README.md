@@ -10,6 +10,7 @@ Never edited to change history — a wrong decision gets a new ADR that supersed
 | [0001](0001-autonomous-ai-governance.md) | Autonomous AI governance model | Accepted |
 | [0002](0002-evidence-first-product-focus.md) | Evidence-first product focus | Accepted |
 | [0003](0003-rekor-transparency-log.md) | Sigstore Rekor as the evidence transparency log | Accepted |
+| [0004](0004-prisma-orm-and-migrations.md) | Prisma as ORM and migration tool | Accepted |
 
 ## Template
 

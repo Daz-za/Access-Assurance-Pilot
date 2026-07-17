@@ -3,7 +3,12 @@
 > Living handoff between agent sessions. Update at the end of every working session.
 > If this file disagrees with the code, the code wins — then fix this file.
 
-**Last updated:** 2026-07-17 · **Phase:** 0 (Truth and Foundation) — exit gate passing
+**Last updated:** 2026-07-17 · **Phase:** 1 (Real Vertical Slice) — starting
+
+**Phase 0 closed:** CI confirmed green on GitHub (run succeeded on
+`claude/ai-autonomous-governance-e5pnzu` before merge) — the one item that was open
+at the end of the last session. ADR 0004 (Prisma as ORM/migrations) is written and
+accepted; Phase 1 implementation starts from it.
 
 ## What actually works today
 
