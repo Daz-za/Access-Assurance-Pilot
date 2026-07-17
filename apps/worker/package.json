@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "db": "workspace:*",
     "dotenv": "^16.4.0"
   },
   "devDependencies": {
