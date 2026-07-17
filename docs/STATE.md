@@ -235,7 +235,12 @@ under "What actually works today".
   `apps/api/src/main.ts`, `apps/api/src/db/seed.ts`, and
   `apps/api/test/env-setup.ts` all load it via an explicit `path.resolve(__dirname,
   ...)` rather than a bare `dotenv.config()`, because pnpm runs package scripts
-  with `cwd` set to the package directory, not the repo root.
+  with `cwd` set to the package directory, not the repo root. The Prisma CLI itself
+  (`prisma migrate dev`/`deploy`) does its *own* env loading and ignores the repo
+  root the same way, so `packages/db/scripts/run-with-env.js` loads the root
+  `.env` before spawning `prisma` — `migrate:dev`/`migrate:deploy` go through that
+  wrapper rather than calling `prisma` directly. Verified `make migrate` and
+  `make seed` both work from a shell with no `DATABASE_URL` pre-set.
 - This sandbox environment's outbound proxy blocks `docker pull` for
   `postgres:16`/Docker Hub (policy 403, not a config issue — see the `infra/docker`
   note above). Worked around locally via a native `apt-get install postgresql`
