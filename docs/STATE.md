@@ -74,8 +74,27 @@ test && pnpm build` (chained, from a `dist/`-deleted state), `docs/reviews/phase
 gate.sh`, and `docs/reviews/phase-1/gate.sh` all run and pass locally, against a real
 Postgres (native `apt-get install postgresql`, same workaround Part 1 used — see the
 `infra/docker` note below) and a real Redis (native `apt-get install redis-server`,
-same reasoning). **Not yet pushed and not yet verified on GitHub Actions** — same
-caveat Part 1 left open; the orchestrating session re-verifies and pushes.
+same reasoning).
+
+**Orchestrating-session fix (after Part 2, before sign-off):** pushing Part 1 and Part
+2 to GitHub surfaced a real CI-only bug neither local run caught: `apps/api`'s and
+`apps/worker`'s test suites failed on GitHub Actions with `DATABASE_URL is not set` /
+`REDIS_URL is not set`, even though the workflow's job-level `env:` block sets both.
+Root cause: Turborepo 2.x strips environment variables that aren't explicitly
+declared in `turbo.json` from a task's child process — `DATABASE_URL`/`REDIS_URL`
+were never declared, so `turbo run test` silently dropped them even though the
+GitHub Actions *job* had them set. This was invisible in every local run so far
+because a local `.env` file (created early in Phase 1 for Prisma CLI convenience, and
+never committed — it's gitignored) fed the same values in through `env-setup.ts`'s
+`dotenv.config()` fallback, masking the gap. Reproduced locally by temporarily
+removing `.env` and running `pnpm test`/`typecheck`/`build` via shell-exported
+env vars only (matching CI's setup exactly) — confirmed the failure, then fixed it by
+adding `"globalEnv": ["DATABASE_URL", "REDIS_URL", "OPA_URL", "AUDIT_EVENT_QUEUE_KEY"]`
+to `turbo.json`, and reproduced success the same way (no `.env` file, shell env vars
+only) before re-verifying with `.env` restored and running both gate scripts again.
+This commit is about to be pushed; CI confirmation on GitHub Actions is the next
+step, not yet claimed here — see the top-of-file "Last updated" line for whether
+that's since been confirmed.
 
 ## What actually works today
 

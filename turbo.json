@@ -1,5 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["DATABASE_URL", "REDIS_URL", "OPA_URL", "AUDIT_EVENT_QUEUE_KEY"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
