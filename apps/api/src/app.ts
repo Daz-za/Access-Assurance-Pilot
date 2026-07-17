@@ -1,6 +1,6 @@
 import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
-import { dashboard, inboxItems, reviewDetails, auditByReview } from "./data/demo";
+import { prisma } from "db";
 import { evaluateSodPolicy } from "./lib/opa";
 
 export interface BuildAppOptions {
@@ -14,10 +14,14 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   app.get("/health/live", async () => ({ status: "ok" }));
 
-  app.get("/health/ready", async () => ({
-    status: "ready",
-    services: { api: "ok" },
-  }));
+  app.get("/health/ready", async () => {
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      return { status: "ready", services: { api: "ok", db: "ok" } };
+    } catch {
+      return { status: "degraded", services: { api: "ok", db: "down" } };
+    }
+  });
 
   app.get("/me", async () => ({
     id: "demo-admin",
@@ -26,22 +30,81 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     roles: ["admin"],
   }));
 
-  app.get("/dashboard", async () => dashboard);
+  app.get("/dashboard", async () => {
+    const [activeCampaigns, pendingReviews, violationsDetected] = await Promise.all([
+      prisma.campaign.count({ where: { status: "active" } }),
+      prisma.reviewItem.count({ where: { status: "pending" } }),
+      prisma.reviewItem.count({ where: { status: "pending" } }),
+    ]);
 
-  app.get("/inbox", async () => ({
-    items: inboxItems.filter((item) => item.status === "pending"),
-  }));
+    return {
+      activeCampaigns,
+      pendingReviews,
+      violationsDetected,
+      // No due-date field exists in the Phase 1 schema yet (campaign
+      // management/deadlines land in Phase 3), so this is honestly 0 rather
+      // than a fabricated number.
+      overdueTasks: 0,
+    };
+  });
+
+  app.get("/inbox", async () => {
+    const items = await prisma.reviewItem.findMany({
+      where: { status: "pending" },
+      include: { user: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return {
+      items: items.map((item) => ({
+        id: item.id,
+        campaignId: item.campaignId,
+        userId: item.userId,
+        userName: item.user.displayName,
+        department: item.user.department,
+        systemName: item.systemName,
+        roleName: item.roleName,
+        issue: item.issue,
+        severity: item.severity,
+        status: item.status,
+      })),
+    };
+  });
 
   app.get("/reviews/:campaignId/users/:userId", async (request, reply) => {
     const { campaignId, userId } = request.params as { campaignId: string; userId: string };
-    const key = `${campaignId}:${userId}`;
-    const detail = reviewDetails[key as keyof typeof reviewDetails];
 
-    if (!detail) {
+    const [reviewItem, campaign, user] = await Promise.all([
+      prisma.reviewItem.findUnique({ where: { campaignId_userId: { campaignId, userId } } }),
+      prisma.campaign.findUnique({ where: { id: campaignId } }),
+      prisma.appUser.findUnique({ where: { id: userId } }),
+    ]);
+
+    if (!reviewItem || !campaign || !user) {
       return reply.status(404).send({ message: "Review detail not found" });
     }
 
-    return detail;
+    const assignments = await prisma.accessAssignment.findMany({
+      where: { userId },
+      include: { system: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return {
+      campaignId: campaign.id,
+      campaignName: campaign.name,
+      userId: user.id,
+      userName: user.displayName,
+      department: user.department,
+      reviewerName: "Darren Lentz",
+      assignments: assignments.map((assignment) => ({
+        id: assignment.id,
+        systemName: assignment.system.name,
+        roleName: assignment.roleName,
+        risk: assignment.risk,
+        message: assignment.message,
+      })),
+    };
   });
 
   app.post("/reviews/:campaignId/users/:userId/decision", async (request, reply) => {
@@ -52,44 +115,44 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       selectedAssignmentIds?: string[];
     };
 
-    const key = `${campaignId}:${userId}`;
-    const detail = reviewDetails[key as keyof typeof reviewDetails];
+    const reviewItem = await prisma.reviewItem.findUnique({
+      where: { campaignId_userId: { campaignId, userId } },
+    });
 
-    if (!detail) {
+    if (!reviewItem) {
       return reply.status(404).send({ message: "Review detail not found" });
     }
 
-    const policyResult = await evaluateSodPolicy(detail.assignments.map((a) => a.roleName));
+    const assignments = await prisma.accessAssignment.findMany({ where: { userId } });
+    const policyResult = await evaluateSodPolicy(assignments.map((a) => a.roleName));
 
-    const matchingInboxItem = inboxItems.find(
-      (item) => item.campaignId === campaignId && item.userId === userId
-    );
+    const selectedAssignmentIds = body.selectedAssignmentIds ?? [];
+    const description = `Decision submitted: ${body.decision}${
+      policyResult?.result?.deny?.length ? " (policy flags present)" : ""
+    }`;
 
-    if (matchingInboxItem) {
-      matchingInboxItem.status = "completed";
-    }
-
-    if (!auditByReview[key]) {
-      auditByReview[key] = {
-        campaign: { id: campaignId, name: detail.campaignName },
-        user: { id: userId, displayName: detail.userName },
-        events: [],
-        evidence: [],
-      };
-    }
-
-    auditByReview[key].events.push({
-      id: `evt-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      description: `Decision submitted: ${body.decision}${
-        policyResult?.result?.deny?.length ? " (policy flags present)" : ""
-      }`,
-    });
-
-    auditByReview[key].evidence.push({
-      id: `evi-${Date.now()}`,
-      label: "Reviewer decision record",
-    });
+    await prisma.$transaction([
+      prisma.reviewDecision.create({
+        data: {
+          reviewItemId: reviewItem.id,
+          decision: body.decision,
+          comment: body.comment || null,
+          selectedAssignmentIds,
+          policyResult: policyResult ?? undefined,
+        },
+      }),
+      prisma.reviewItem.update({
+        where: { id: reviewItem.id },
+        data: { status: "completed" },
+      }),
+      prisma.auditEvent.create({
+        data: {
+          campaignId,
+          userId,
+          description,
+        },
+      }),
+    ]);
 
     return {
       ok: true,
@@ -101,37 +164,63 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   app.get("/audit/campaigns/:campaignId/users/:userId", async (request, reply) => {
     const { campaignId, userId } = request.params as { campaignId: string; userId: string };
-    const key = `${campaignId}:${userId}`;
-    const audit = auditByReview[key];
 
-    if (!audit) {
+    const [campaign, user, events] = await Promise.all([
+      prisma.campaign.findUnique({ where: { id: campaignId } }),
+      prisma.appUser.findUnique({ where: { id: userId } }),
+      prisma.auditEvent.findMany({
+        where: { campaignId, userId },
+        orderBy: { timestamp: "asc" },
+      }),
+    ]);
+
+    if (!campaign || !user || events.length === 0) {
       return reply.status(404).send({ message: "Audit trail not found" });
     }
 
-    return audit;
+    return {
+      campaign: { id: campaign.id, name: campaign.name },
+      user: { id: user.id, displayName: user.displayName },
+      events: events.map((event) => ({
+        id: event.id,
+        timestamp: event.timestamp.toISOString(),
+        description: event.description,
+      })),
+    };
   });
 
-  app.get("/violations", async () => ({
-    items: inboxItems
-      .filter((item) => item.status === "pending")
-      .map((item) => ({
+  app.get("/violations", async () => {
+    const items = await prisma.reviewItem.findMany({
+      where: { status: "pending" },
+      include: { user: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return {
+      items: items.map((item) => ({
         userId: item.userId,
-        userName: item.userName,
+        userName: item.user.displayName,
         campaignId: item.campaignId,
         issueType: item.issue,
         issueLabel: item.issue,
         systems: [item.systemName],
         severity: item.severity,
       })),
-  }));
+    };
+  });
 
-  app.get("/admin/systems", async () => ({
-    items: [
-      { id: "sys-1", name: "SAP", type: "erp", connectionStatus: "connected" },
-      { id: "sys-2", name: "AD", type: "directory", connectionStatus: "connected" },
-      { id: "sys-3", name: "CSV Upload", type: "custom", connectionStatus: "connected" },
-    ],
-  }));
+  app.get("/admin/systems", async () => {
+    const systems = await prisma.system.findMany({ orderBy: { createdAt: "asc" } });
+
+    return {
+      items: systems.map((system) => ({
+        id: system.id,
+        name: system.name,
+        type: system.type,
+        connectionStatus: system.connectionStatus,
+      })),
+    };
+  });
 
   app.get("/admin/rules", async () => ({
     items: [

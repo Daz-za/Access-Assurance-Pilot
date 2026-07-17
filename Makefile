@@ -1,4 +1,4 @@
-.PHONY: check-pnpm infra-up infra-down seed api web worker pilot-up pilot-down test
+.PHONY: check-pnpm infra-up infra-down migrate seed api web worker pilot-up pilot-down test
 
 check-pnpm:
 	@command -v pnpm >/dev/null 2>&1 || (echo "pnpm is not available. Run: corepack enable && corepack prepare pnpm@10.11.0 --activate" && exit 1)
@@ -10,9 +10,10 @@ infra-up:
 infra-down:
 	docker-compose -f infra/docker/docker-compose.yml down
 
-# migrate: removed — there is no database and no db:migrate script yet.
-# apps/api/package.json's "migrate" script is just an echo stub. Real
-# migrations are Phase 1 work (see docs/governance/ROADMAP.md).
+# Applies packages/db/prisma/migrations against DATABASE_URL (see .env.example).
+# Requires a reachable Postgres — `make infra-up` starts one via docker-compose.
+migrate: check-pnpm
+	pnpm --filter api migrate
 
 seed: check-pnpm
 	pnpm --filter api seed
