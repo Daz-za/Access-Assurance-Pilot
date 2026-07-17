@@ -45,6 +45,24 @@ what is true and does not update STATE.md has failed, regardless of code quality
    money, publishing externally, handling real personal/customer data, or amending the
    charter's mission. Everything else is yours to decide.
 
+## Model tiering (funder directive — token economy)
+
+Route work to the cheapest model that can do it well. The session's frontier model is
+for orchestration, architecture, ADR-level decisions, and final review — not for bulk
+code writing.
+
+- **Haiku**: mechanical edits — renames, config boilerplate, formatting, repetitive
+  test scaffolding, doc typo fixes.
+- **Sonnet**: standard implementation — features, tests, refactors, CI wiring,
+  bug fixes with a clear diagnosis.
+- **Frontier (session model)**: phase planning, gate sign-off, ADRs, security-sensitive
+  code (evidence pipeline, signing, verifier), and reviewing delegated work before push.
+
+Delegate via subagents with an explicit cheaper-model override; give each one a
+self-contained brief (files, constraints, definition of done) and verify the result
+against ENGINEERING_STANDARDS.md before pushing. Never let a delegated agent declare
+a phase gate passed.
+
 ## Development quick reference
 
 - Monorepo: pnpm workspaces + turbo. Apps: `apps/api` (Fastify), `apps/web`
