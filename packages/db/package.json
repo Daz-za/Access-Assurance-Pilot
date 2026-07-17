@@ -1,0 +1,25 @@
+{
+  "name": "db",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "postinstall": "prisma generate",
+    "migrate:dev": "node scripts/run-with-env.js migrate dev",
+    "migrate:deploy": "node scripts/run-with-env.js migrate deploy",
+    "build": "prisma generate && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint . --config ../../eslint.config.mjs",
+    "test": "echo \"db: no unit tests (schema/client only, exercised via apps/api integration tests)\""
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.4.0",
+    "prisma": "^5.22.0",
+    "typescript": "^5.4.0"
+  }
+}

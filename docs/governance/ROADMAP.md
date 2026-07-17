@@ -1,6 +1,7 @@
 # Roadmap — Phases and Exit Gates
 
-**Status:** Active · **Current phase:** 0
+**Status:** Active · **Current phase:** 2 (Phase 0 and Phase 1 gates both closed —
+see `docs/reviews/phase-0/` and `docs/reviews/phase-1/SIGNOFF.md`)
 
 Each phase ends with a scripted end-to-end test — the only artifact the funder
 reviews. A gate passes when its script runs **from a fresh clone, unattended,

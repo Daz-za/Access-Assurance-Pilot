@@ -1,23 +1,20 @@
 {
-  "name": "worker",
+  "name": "queue",
   "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . --config ../../eslint.config.mjs",
-    "test": "vitest run"
+    "test": "echo \"queue: no unit tests (thin ioredis wrapper); exercised via apps/worker's queue-consumer tests and apps/api's decision-flow test)\""
   },
   "dependencies": {
     "db": "workspace:*",
-    "dotenv": "^16.4.0",
-    "ioredis": "^5.4.1",
-    "queue": "workspace:*"
+    "ioredis": "^5.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.4.0",
-    "vitest": "^3.2.7"
+    "typescript": "^5.4.0"
   }
 }

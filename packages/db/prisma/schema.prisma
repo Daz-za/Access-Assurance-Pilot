@@ -1,0 +1,123 @@
+// Phase 1 domain model — see docs/decisions/0004-prisma-orm-and-migrations.md
+// and docs/governance/ROADMAP.md (Phase 1) for the requirements this schema
+// implements. Keep this in sync with docs/STATE.md when it changes.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReviewItemStatus {
+  pending
+  completed
+}
+
+enum ReviewDecisionType {
+  approve_all
+  revoke_selected
+  flag_follow_up
+}
+
+model System {
+  id               String   @id @default(cuid())
+  name             String
+  type             String
+  connectionStatus String   @default("connected")
+  createdAt        DateTime @default(now())
+
+  assignments AccessAssignment[]
+}
+
+// Named AppUser (not User) to avoid clashing with any future auth/identity model.
+model AppUser {
+  id          String   @id @default(cuid())
+  displayName String
+  email       String   @unique
+  department  String
+  createdAt   DateTime @default(now())
+
+  assignments AccessAssignment[]
+  reviewItems ReviewItem[]
+}
+
+model AccessAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  systemId  String
+  roleName  String
+  risk      String
+  message   String
+  createdAt DateTime @default(now())
+
+  user   AppUser @relation(fields: [userId], references: [id])
+  system System  @relation(fields: [systemId], references: [id])
+
+  @@index([userId])
+  @@index([systemId])
+}
+
+model Campaign {
+  id        String   @id @default(cuid())
+  name      String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+
+  reviewItems ReviewItem[]
+}
+
+// One row per (campaign, user) pair up for review. systemName/roleName/issue/
+// severity are denormalized snapshot fields describing the flagged access at
+// review time (distinct from the user's live AccessAssignment rows) — this
+// matches the shape the existing demo/UI already expects.
+model ReviewItem {
+  id         String           @id @default(cuid())
+  campaignId String
+  userId     String
+  systemName String
+  roleName   String
+  issue      String
+  severity   String
+  status     ReviewItemStatus @default(pending)
+  createdAt  DateTime         @default(now())
+
+  campaign  Campaign         @relation(fields: [campaignId], references: [id])
+  user      AppUser          @relation(fields: [userId], references: [id])
+  decisions ReviewDecision[]
+
+  // campaignId+userId is the hot lookup path (GET /reviews/:campaignId/users/:userId,
+  // POST .../decision, GET /audit/campaigns/:campaignId/users/:userId).
+  @@unique([campaignId, userId])
+  @@index([status])
+}
+
+model ReviewDecision {
+  id                    String             @id @default(cuid())
+  reviewItemId          String
+  decision              ReviewDecisionType
+  comment               String?
+  selectedAssignmentIds Json               @default("[]")
+  policyResult          Json?
+  decidedAt             DateTime           @default(now())
+
+  reviewItem ReviewItem @relation(fields: [reviewItemId], references: [id])
+
+  @@index([reviewItemId])
+}
+
+// Deliberately plain campaignId/userId columns (no FK) rather than a
+// reviewItemId relation: audit events should still be readable even if the
+// review item they describe is ever deleted, and campaignId+userId is the
+// same hot lookup key used everywhere else.
+model AuditEvent {
+  id          String   @id @default(cuid())
+  campaignId  String
+  userId      String
+  timestamp   DateTime @default(now())
+  description String
+
+  @@index([campaignId, userId])
+}
