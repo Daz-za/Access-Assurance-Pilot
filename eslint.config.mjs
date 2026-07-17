@@ -20,5 +20,22 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
     },
+  },
+  {
+    // Plain Node CommonJS utility scripts (invoked directly with `node`, not
+    // compiled from TS) — not ESM, not browser code, so they need Node's
+    // CommonJS globals and are allowed to use require().
+    files: ["**/scripts/**/*.js"],
+    languageOptions: {
+      globals: {
+        require: "readonly",
+        module: "readonly",
+        __dirname: "readonly",
+        process: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
   }
 );

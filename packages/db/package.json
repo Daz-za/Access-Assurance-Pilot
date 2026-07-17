@@ -6,8 +6,8 @@
   "scripts": {
     "generate": "prisma generate",
     "postinstall": "prisma generate",
-    "migrate:dev": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
+    "migrate:dev": "node scripts/run-with-env.js migrate dev",
+    "migrate:deploy": "node scripts/run-with-env.js migrate deploy",
     "build": "prisma generate && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . --config ../../eslint.config.mjs",
@@ -18,6 +18,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "dotenv": "^16.4.0",
     "prisma": "^5.22.0",
     "typescript": "^5.4.0"
   }
