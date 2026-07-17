@@ -8,7 +8,7 @@ import { prisma, resetDatabase, seedDemoData } from "db";
 async function main() {
   await resetDatabase(prisma);
   await seedDemoData(prisma);
-  console.log("Seed complete: 2 systems, 2 users, 1 campaign, 2 review items, 3 assignments, 2 audit events.");
+  console.log("Seed complete: 2 systems, 2 users, 1 campaign, 2 review items, 4 assignments, 2 audit events.");
 }
 
 main()

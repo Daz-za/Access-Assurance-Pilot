@@ -86,6 +86,21 @@ export async function seedDemoData(client: PrismaClient): Promise<void> {
         risk: "critical",
         message: "Privileged role requires enhanced review",
       },
+      // Phase 1 part 2: asg-1's "FI Admin" role alone never actually
+      // triggered the SoD policy (infra/opa/data/policy-data.json's only
+      // configured pair is ["FI Admin", "AP Payments"]) — user-1 needs both
+      // roles assigned for evaluateSodPolicy to produce a real, non-empty
+      // deny (via OPA or the local fallback). Without this row, the "SoD
+      // conflict" label on ri-1 was cosmetic; asg-1's message field
+      // described a violation the actual assignment data couldn't reproduce.
+      {
+        id: "asg-4",
+        userId: "user-1",
+        systemId: "sys-1",
+        roleName: "AP Payments",
+        risk: "critical",
+        message: "SoD violation: FI Admin + AP Payments",
+      },
     ],
   });
 

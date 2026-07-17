@@ -1,6 +1,6 @@
 import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
-import { prisma } from "db";
+import { prisma, Prisma } from "db";
 import { evaluateSodPolicy } from "./lib/opa";
 
 export interface BuildAppOptions {
@@ -128,8 +128,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
     const selectedAssignmentIds = body.selectedAssignmentIds ?? [];
     const description = `Decision submitted: ${body.decision}${
-      policyResult?.result?.deny?.length ? " (policy flags present)" : ""
-    }`;
+      policyResult.result.deny.length ? " (policy flags present)" : ""
+    }${policyResult.degraded ? ` (degraded: ${policyResult.degradedReason}, local fallback used)` : ""}`;
 
     await prisma.$transaction([
       prisma.reviewDecision.create({
@@ -138,7 +138,14 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
           decision: body.decision,
           comment: body.comment || null,
           selectedAssignmentIds,
-          policyResult: policyResult ?? undefined,
+          // Store the full policy result, including the degraded/
+          // degradedReason tags — the audit trail must never make a
+          // degraded evaluation look identical to a real one downstream.
+          // Cast: SodPolicyResult is a plain JSON-serializable object, but
+          // its named interface (deliberately not an index-signature type,
+          // so opa.ts's return shape stays self-documenting) doesn't
+          // structurally satisfy Prisma's InputJsonValue on its own.
+          policyResult: policyResult as unknown as Prisma.InputJsonValue,
         },
       }),
       prisma.reviewItem.update({
