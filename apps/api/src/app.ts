@@ -1,7 +1,13 @@
 import Fastify, { FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import { prisma, Prisma } from "db";
+import { createRedisClient, enqueueAuditEvent } from "queue";
 import { evaluateSodPolicy } from "./lib/opa";
+
+// Singleton Redis connection for enqueueing audit-event jobs — mirrors the
+// prisma singleton pattern in packages/db/src/client.ts. apps/worker is the
+// consumer; see packages/queue/src/index.ts for the shared queue contract.
+const redis = createRedisClient();
 
 export interface BuildAppOptions {
   logger?: boolean;
@@ -131,6 +137,10 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       policyResult.result.deny.length ? " (policy flags present)" : ""
     }${policyResult.degraded ? ` (degraded: ${policyResult.degradedReason}, local fallback used)` : ""}`;
 
+    // The user-facing inbox needs to update immediately, so the decision and
+    // status flip stay synchronous. Audit-event writing is real async work
+    // (Phase 1 roadmap item) — enqueue it onto Redis for apps/worker to
+    // write, rather than writing the AuditEvent row here ourselves.
     await prisma.$transaction([
       prisma.reviewDecision.create({
         data: {
@@ -152,14 +162,16 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
         where: { id: reviewItem.id },
         data: { status: "completed" },
       }),
-      prisma.auditEvent.create({
-        data: {
-          campaignId,
-          userId,
-          description,
-        },
-      }),
     ]);
+
+    try {
+      await enqueueAuditEvent(redis, { campaignId, userId, description });
+    } catch (error) {
+      // The decision itself is already durably persisted above; a queue
+      // outage here means the audit event write is delayed, not lost data
+      // for the decision. Log loudly rather than fail the request or hide it.
+      app.log.error({ err: error }, "Failed to enqueue audit-event job");
+    }
 
     return {
       ok: true,
