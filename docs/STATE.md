@@ -3,13 +3,14 @@
 > Living handoff between agent sessions. Update at the end of every working session.
 > If this file disagrees with the code, the code wins — then fix this file.
 
-**Last updated:** 2026-07-17 · **Phase:** 1 (Real Vertical Slice) — both parts of the
-roadmap's implementation work are now built and verified locally: part 1 (Postgres
-persistence) and part 2 (OPA degraded mode + data-driven Rego, worker async work over
-Redis, the Phase 1 exit-gate script). **This does not mean the Phase 1 roadmap gate is
-declared passed** — per `CLAUDE.md`'s model-tiering policy, a delegated session does
-not sign off a phase gate; that is the orchestrating session's call, after its own
-independent re-verification (same as Part 1).
+**Last updated:** 2026-07-17 · **Phase:** 1 CLOSED — gate signed off by the
+orchestrating session; see `docs/reviews/phase-1/SIGNOFF.md` for the full gate
+review pack (what was built, what was cut, what's known weak). **Phase 2 (Evidence
+Engine) starts next.** CI is confirmed green on GitHub Actions for the final commit
+on this branch — the orchestrating session independently re-ran both gate scripts,
+found and fixed a real CI-only bug (Turborepo stripping undeclared env vars from
+task processes — see below) that neither delegated session's local runs had caught,
+and re-verified before signing off.
 
 **Phase 0 closed:** CI confirmed green on GitHub (run succeeded on
 `claude/ai-autonomous-governance-e5pnzu` before merge) — the one item that was open
@@ -92,9 +93,9 @@ env vars only (matching CI's setup exactly) — confirmed the failure, then fixe
 adding `"globalEnv": ["DATABASE_URL", "REDIS_URL", "OPA_URL", "AUDIT_EVENT_QUEUE_KEY"]`
 to `turbo.json`, and reproduced success the same way (no `.env` file, shell env vars
 only) before re-verifying with `.env` restored and running both gate scripts again.
-This commit is about to be pushed; CI confirmation on GitHub Actions is the next
-step, not yet claimed here — see the top-of-file "Last updated" line for whether
-that's since been confirmed.
+**Confirmed**: pushed as commit `419a51a`, and the resulting GitHub Actions run
+succeeded — see `docs/reviews/phase-1/SIGNOFF.md` for the full gate sign-off this
+unblocked.
 
 ## What actually works today
 
@@ -357,21 +358,22 @@ that's since been confirmed.
 
 ## Next session should
 
-1. Push this branch, open/merge the PR, and confirm `.github/workflows/ci.yml`
-   actually goes green on GitHub — this has been open since the end of Phase 0 and
-   still is; a real CI run (now exercising both Postgres *and* Redis service
-   containers) is the only thing that closes the roadmap's "CI is green on main"
-   exit-gate item.
-2. If/when this environment (or a future session's) has unblocked access to Docker
-   Hub or GitHub Releases, actually stand up a real OPA instance and confirm
-   `infra/opa/policies/sod.rego` and `privileged.rego` parse and evaluate correctly
-   against `infra/opa/data/policy-data.json` — this is the one real gap left in "OPA
-   evaluated for real" (see "What exists but does NOT work" above).
+1. **Phase 2 (Evidence Engine) is next per the roadmap** — canonical evidence
+   format (ADR first), real signing (Sigstore/cosign, no dummy keys), Rekor
+   anchoring at decision time, evidence blobs in MinIO, and the standalone
+   verifier CLI. This is the roadmap's central bet (see `docs/governance/
+   CHARTER.md` and ADR 0002) — nothing in Phase 1 blocks starting it.
+2. If/when an environment has unblocked access to Docker Hub or GitHub Releases,
+   stand up a real OPA instance and confirm `infra/opa/policies/sod.rego` and
+   `privileged.rego` parse and evaluate correctly against
+   `infra/opa/data/policy-data.json` — the one real gap carried out of Phase 1
+   (see `docs/reviews/phase-1/SIGNOFF.md`).
 3. Add a `services.redis` check to `GET /health/ready` (currently Postgres-only) so a
-   Redis outage is visible somewhere, not just silently logged server-side.
-4. Phase 2 (evidence engine) is next per the roadmap — canonical evidence format,
-   real signing, Rekor anchoring, the standalone verifier. Nothing in this session's
-   work blocks starting that.
+   Redis outage is visible somewhere, not just silently logged server-side — small,
+   worth doing early in Phase 2 rather than letting it linger.
+4. Merging this branch (`claude/ai-autonomous-governance-e5pnzu`) to `main` is a
+   human/orchestrating-session call, not automatic — confirm CI is still green on
+   whatever HEAD is at merge time.
 
 ## Known risks / open questions
 
