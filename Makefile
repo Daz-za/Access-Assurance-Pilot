@@ -1,4 +1,4 @@
-.PHONY: check-pnpm infra-up infra-down migrate seed api web worker pilot-up pilot-down rekor-verify test k8s-render
+.PHONY: check-pnpm infra-up infra-down seed api web worker pilot-up pilot-down test
 
 check-pnpm:
 	@command -v pnpm >/dev/null 2>&1 || (echo "pnpm is not available. Run: corepack enable && corepack prepare pnpm@10.11.0 --activate" && exit 1)
@@ -10,11 +10,12 @@ infra-up:
 infra-down:
 	docker-compose -f infra/docker/docker-compose.yml down
 
-migrate:
-	pnpm --filter api db:migrate
+# migrate: removed — there is no database and no db:migrate script yet.
+# apps/api/package.json's "migrate" script is just an echo stub. Real
+# migrations are Phase 1 work (see docs/governance/ROADMAP.md).
 
-seed:
-	pnpm --filter api db:seed
+seed: check-pnpm
+	pnpm --filter api seed
 
 api: check-pnpm
 	pnpm --filter api dev
@@ -30,11 +31,10 @@ pilot-up: infra-up
 
 pilot-down: infra-down
 
-rekor-verify:
-	# Add rekor verification command here
+# rekor-verify: removed — was an empty stub. Rekor verification is Phase 2
+# work (see docs/decisions/0003-rekor-transparency-log.md).
 
 test: check-pnpm
 	pnpm test
 
-k8s-render:
-	kustomize build infra/k8s/overlays/dev
+# k8s-render: removed — infra/k8s does not exist in this repo.

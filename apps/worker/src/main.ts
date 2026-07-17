@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
+import { heartbeatLog } from "./heartbeat";
 
 dotenv.config();
 
 console.log("Worker started.");
 setInterval(() => {
-  console.log("Worker heartbeat", new Date().toISOString());
+  console.log(...heartbeatLog());
 }, 15000);
